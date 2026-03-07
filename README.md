@@ -25,5 +25,4 @@ Bu proje, güncel frontend geliştirme araçları kullanılarak inşa edilmişti
 Projeyi yerel bilgisayarınızda çalıştırmak için aşağıdaki adımları izleyebilirsiniz:
 
 1. Bu depoyu klonlayın:
-   ```bash
-   git clone [https://github.com/kullanici-adiniz/stack-done.git](https://github.com/kullanici-adiniz/stack-done.git)
+  git clone https://github.com/kullanici-adiniz/stack-done.git
