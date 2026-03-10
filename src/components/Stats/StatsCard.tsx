@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, PieChart, TrendingUp } from 'lucide-react';
+import { CheckCircle2, PieChart, TrendingUp } from 'lucide-react';
 import type { Task } from '../../types/todo';
 
 interface StatsCardProps {

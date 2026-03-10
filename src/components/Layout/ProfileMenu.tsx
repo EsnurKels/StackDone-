@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Palette, Check, X, LogOut } from 'lucide-react';
+import { User, Palette, Check, LogOut } from 'lucide-react';
 import type { UserProfile, ThemeColor } from '../../types/user';
 
 interface ProfileMenuProps {
