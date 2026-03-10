@@ -43,7 +43,7 @@ export const Onboarding = ({ user, setUser, isDark, setIsDark }: OnboardingProps
             </label>
             <input 
               type="text" 
-              placeholder="Örn: Esman"
+              placeholder="Örn: Blue..."
               className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none transition-all duration-300 font-bold shadow-sm ${
                 isDark ? 'bg-slate-700 text-white focus:border-slate-500' : 'bg-slate-50 text-slate-700 focus:border-slate-200 focus:bg-white'
               }`}
