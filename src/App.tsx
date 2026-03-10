@@ -1,11 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Onboarding } from './components/Onboarding/Onboarding';
 import { ThemeToggle } from './components/Layout/ThemeToggle';
+import { ProfileMenu } from './components/Layout/ProfileMenu';
+import { Sidebar } from './components/Layout/Sidebar';
+import { StatsCard } from './components/Stats/StatsCard';
 import { TaskInput } from './components/Task/TaskInput';
-import { TaskItem } from './components/Task/TaskItem'; // Eksik olabilecek import
+import { TaskItem } from './components/Task/TaskItem';
+import { Pomodoro } from './components/Pomodora/Pomodora';
 import type { UserProfile, ThemeColor } from './types/user';
 import type { Task, Priority } from './types/todo';
+import confetti from 'canvas-confetti';
+import { Rocket, BarChart3, Timer } from 'lucide-react';
 
 const themeOptions: { id: ThemeColor; color: string; text: string; name: string }[] = [
   { id: 'emerald', color: 'bg-emerald-500', text: 'text-emerald-600', name: 'Zümrüt' },
@@ -17,126 +23,133 @@ const themeOptions: { id: ThemeColor; color: string; text: string; name: string 
 
 function App() {
   const [user, setUser] = useLocalStorage<UserProfile>('stackdone-user', {
-    name: '',
-    theme: 'emerald',
-    isRegistered: false
+    name: '', theme: 'emerald', isRegistered: false
   });
-
   const [tasks, setTasks] = useLocalStorage<Task[]>('stackdone-tasks', []);
   const [isDark, setIsDark] = useLocalStorage('stackdone-dark', false);
+  const [activeTab, setActiveTab] = useState<'tasks' | 'stats' | 'pomodoro'>('tasks');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (isDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    isDark ? root.classList.add('dark') : root.classList.remove('dark');
   }, [isDark]);
 
   const currentTheme = themeOptions.find(t => t.id === user.theme) || themeOptions[0];
 
-  // --- Fonksiyonlar ---
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 100, spread: 70, origin: { y: 0.6 },
+      colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+    });
+  };
+
+  const playSuccessSound = () => {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(() => {});
+  };
+
   const addTask = (text: string, priority: Priority, category: string) => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      text,
-      completed: false,
-      priority,
-      category,
-      createdAt: Date.now(),
+    const newTask: Task = { 
+      id: crypto.randomUUID(), 
+      text, 
+      completed: false, 
+      priority, 
+      category, 
+      createdAt: Date.now() 
     };
     setTasks([newTask, ...tasks]);
   };
 
   const toggleTask = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        if (!t.completed) { playSuccessSound(); triggerConfetti(); }
+        return { ...t, completed: !t.completed };
+      }
+      return t;
+    }));
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id));
-  };
+  const deleteTask = (id: string) => setTasks(tasks.filter(t => t.id !== id));
 
-  // --- Onboarding Kontrolü ---
-  if (!user.isRegistered) {
-    return <Onboarding user={user} setUser={setUser} isDark={isDark} setIsDark={setIsDark} />;
-  }
+  if (!user.isRegistered) return <Onboarding user={user} setUser={setUser} isDark={isDark} setIsDark={setIsDark} />;
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${isDark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
-      
-      {/* NAVBAR */}
-      <nav className={`p-4 border-b flex justify-between items-center px-8 sticky top-0 z-40 transition-all duration-500 ${
-        isDark ? 'bg-slate-800 border-slate-700 shadow-xl' : 'bg-white border-slate-100 shadow-md'
-      }`}>
-        <div className="flex items-center gap-2">
-          <div className={`w-9 h-9 ${currentTheme.color} rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-${user.theme}-500/20`}>
-            S
-          </div>
-          <h1 className="font-black text-xl tracking-tighter italic hidden sm:block uppercase">STACKDONE</h1>
-        </div>
+<div className={`h-screen w-screen flex overflow-hidden transition-colors duration-500 ${isDark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>      
+      <Sidebar 
+        activeTab={activeTab as any} 
+        setActiveTab={setActiveTab as any} 
+        isDark={isDark} 
+        themeColor={currentTheme.color}
+        isCollapsed={isSidebarCollapsed} 
+        setIsCollapsed={setIsSidebarCollapsed}
+      />
 
-        <div className="flex items-center gap-5">
-          <ThemeToggle isDark={isDark} setIsDark={setIsDark} />
-          <div className={`flex items-center gap-3 pl-5 border-l ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-             <div className="text-right hidden md:block leading-none">
-               <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1">Hesabım</p>
-               <p className="text-sm font-bold">{user.name}</p>
-             </div>
-             <div className={`w-11 h-11 ${currentTheme.color} text-white rounded-2xl flex items-center justify-center font-black shadow-xl hover:scale-105 transition-transform cursor-pointer border-2 border-white/10`}>
-               {user.name[0]?.toUpperCase()}
-             </div>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'} h-full overflow-hidden`}>
+        {/* NAVBAR */}
+        <nav className={`h-[70px] border-b flex justify-between items-center px-8 z-40 backdrop-blur-md ${
+          isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-100'
+        }`}>
+          <h1 className={`font-black text-xl tracking-tighter italic uppercase flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+            {activeTab === 'tasks' && <><Rocket size={22} className={currentTheme.text} /> <span>Yapılacaklar</span></>}
+            {activeTab === 'pomodoro' && <><Timer size={22} className={currentTheme.text} /> <span>Odaklan</span></>}
+            {activeTab === 'stats' && <><BarChart3 size={22} className={currentTheme.text} /> <span>Verimlilik</span></>}
+          </h1>
+          <div className="flex items-center gap-5">
+            <ThemeToggle isDark={isDark} setIsDark={setIsDark} />
+            <ProfileMenu user={user} setUser={setUser} isDark={isDark} themeOptions={themeOptions} />
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* ANA PANEL */}
-      <main className="max-w-3xl mx-auto p-6 pt-12">
-        <header className="mb-10 text-center sm:text-left">
-          <h2 className={`text-4xl font-black tracking-tight mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            Merhaba, <span className={`${currentTheme.text}`}>{user.name}!</span>
-          </h2>
-          <p className="opacity-60 font-medium text-lg">Bugün neler bitiriyoruz?</p>
-        </header>
+        {/* ANA İÇERİK */}
+        <main className="flex-1 p-6 overflow-hidden flex flex-col items-center">
+          {activeTab === 'tasks' ? (
+            <div className="w-full max-w-3xl h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <header className="mb-6">
+                <h2 className={`text-3xl font-black mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  Merhaba, <span className={currentTheme.text}>{user.name}!</span>
+                </h2>
+                <p className="opacity-60 font-medium italic text-sm">Bugün neleri tamamlıyoruz?</p>
+              </header>
+              
+              <div className="mb-6">
+                <TaskInput onAdd={addTask} themeColor={currentTheme.color} isDark={isDark} />
+              </div>
 
-        {/* TASK INPUT */}
-        <div className="mb-10">
-          <TaskInput onAdd={addTask} themeColor={currentTheme.color} isDark={isDark} />
-        </div>
-
-        {/* GÖREV LİSTESİ */}
-        {tasks.length === 0 ? (
-          /* BOŞ DURUM (Empty State) */
-          <div className={`p-16 rounded-[3rem] border-4 border-dashed flex flex-col items-center justify-center transition-colors ${
-            isDark ? 'border-slate-800 text-slate-700' : 'border-slate-100 text-slate-300'
-          }`}>
-             <p className="font-bold text-xl italic tracking-widest uppercase opacity-30 text-center">
-               StackDone ile fark yarat... <br />
-               <span className="text-sm normal-case text-slate-400">İlk görevini yukarıdan ekleyebilirsin.</span>
-             </p>
-          </div>
-        ) : (
-          /* LİSTE DURUMU */
-          <div className="space-y-3 pb-20">
-            {tasks.map((task) => (
-              <TaskItem 
-                key={task.id}
-                task={task}
-                onToggle={toggleTask}
-                onDelete={deleteTask}
-                themeText={currentTheme.text}
-                isDark={isDark}
-              />
-            ))}
-            
-            <p className="text-center mt-8 opacity-30 text-[10px] font-black uppercase tracking-[0.3em]">
-              {tasks.filter(t => t.completed).length} / {tasks.length} TAMAMLANDI
-            </p>
-          </div>
-        )}
-      </main>
+              {/* GÖREV LİSTESİ - Kaydırma burada aktif */}
+              <div className="flex-1 overflow-y-auto pr-2 space-y-3 pb-10 custom-scrollbar">
+                {[...tasks].sort((a,b) => a.completed === b.completed ? b.createdAt - a.createdAt : (a.completed ? 1 : -1))
+                  .map(t => (
+                    <TaskItem 
+                      key={t.id} 
+                      task={t} 
+                      onToggle={toggleTask} 
+                      onDelete={deleteTask} 
+                      themeText={currentTheme.text} 
+                      isDark={isDark} 
+                    />
+                  ))}
+                {tasks.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-40 opacity-20 italic">
+                    <Rocket size={48} className="mb-2" />
+                    <p>Henüz bir görev eklenmemiş...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : activeTab === 'pomodoro' ? (
+            <div className="flex-1 w-full flex items-center justify-center animate-in fade-in zoom-in duration-500">
+               <Pomodoro isDark={isDark} themeColor={currentTheme.color} />
+            </div>
+          ) : (
+            <div className="w-full max-w-4xl h-full overflow-y-auto pr-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+               <StatsCard tasks={tasks} isDark={isDark} themeColor={currentTheme.color} />
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

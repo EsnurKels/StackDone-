@@ -81,6 +81,9 @@ export const TaskInput = ({ onAdd, themeColor, isDark }: TaskInputProps) => {
                 </button>
               ))}
             </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Kategori butonları */}
+            </div>
           </div>
 
           {/* Öncelik Seçimi */}
